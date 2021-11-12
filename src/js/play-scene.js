@@ -9,12 +9,12 @@ class PlayScene extends Phaser.Scene {
 
         // ladda spelets bakgrundsbild, statisk
         // setOrigin behöver användas för att den ska ritas från top left
-        this.add.image(0, 0, 'background').setOrigin(0, 0);
+       // this.add.image(0, 0, 'background').setOrigin(0, 0);
 
         // skapa en tilemap från JSON filen vi preloadade
         const map = this.make.tilemap({ key: 'map' });
         // ladda in tilesetbilden till vår tilemap
-        const tileset = map.addTilesetImage('jefrens_platformer', 'tiles');
+        const tileset = map.addTilesetImage('platforms', 'tiles');
 
         // initiera animationer, detta är flyttat till en egen metod
         // för att göra create metoden mindre rörig
@@ -26,7 +26,8 @@ class PlayScene extends Phaser.Scene {
         // Ladda lagret Platforms från tilemappen
         // och skapa dessa
         // sätt collisionen
-        this.platforms = map.createLayer('Platforms', tileset);
+        map.createLayer('bakgrund', tileset);
+        this.platforms = map.createLayer('platforms', tileset);
         this.platforms.setCollisionByExclusion(-1, true);
         // platforms.setCollisionByProperty({ collides: true });
         // this.platforms.setCollisionFromCollisionGroup(
@@ -41,6 +42,13 @@ class PlayScene extends Phaser.Scene {
         this.player.setBounce(0.1);
         this.player.setCollideWorldBounds(true);
 
+
+        this.player2 = this.physics.add.sprite(850, 300, 'player');
+        this.player2.setBounce(0.1);
+        this.player2.setCollideWorldBounds(true);
+
+
+
         // skapa en fysik-grupp
         this.spikes = this.physics.add.group({
             allowGravity: false,
@@ -51,7 +59,7 @@ class PlayScene extends Phaser.Scene {
         // kan vi ladda in andra lager
         // i tilemappen finns det ett lager Spikes
         // som innehåller spikarnas position
-        console.log(this.platforms);
+       /* console.log(this.platforms);
         map.getObjectLayer('Spikes').objects.forEach((spike) => {
             // iterera över spikarna, skapa spelobjekt
             const spikeSprite = this.spikes
@@ -60,11 +68,12 @@ class PlayScene extends Phaser.Scene {
             spikeSprite.body
                 .setSize(spike.width, spike.height - 20)
                 .setOffset(0, 20);
-        });
+        });*/
         // lägg till en collider mellan spelare och spik
         // om en kollision sker, kör callback metoden playerHit
         this.physics.add.collider(
             this.player,
+            this.player2,
             this.spikes,
             this.playerHit,
             null,
@@ -73,6 +82,8 @@ class PlayScene extends Phaser.Scene {
 
         // krocka med platforms lagret
         this.physics.add.collider(this.player, this.platforms);
+
+        this.physics.add.collider(this.player2, this.platforms);
 
         // skapa text på spelet, texten är tom
         // textens innehåll sätts med updateText() metoden
@@ -84,7 +95,11 @@ class PlayScene extends Phaser.Scene {
         this.updateText();
 
         // lägg till en keyboard input för W
-        this.keyObj = this.input.keyboard.addKey('W', true, false);
+        this.keyObj = this.input.keyboard.addKey('', true, false);
+        this.a = this.input.keyboard.addKey('a', true, false);
+        this.w = this.input.keyboard.addKey('w', true, false);
+        this.s = this.input.keyboard.addKey('s', true, false);
+        this.d = this.input.keyboard.addKey('d', true, false);
 
         // exempel för att lyssna på events
         this.events.on('pause', function () {
@@ -143,7 +158,52 @@ class PlayScene extends Phaser.Scene {
             // otherwise, make them face the other side
             this.player.setFlipX(true);
         }
+
+
+        // följande kod är från det tutorial ni gjort tidigare
+        // Control the player with left or right keys
+        if (this.a) {
+            this.player2.setVelocityX(-200);
+            if (this.player2.body.onFloor()) {
+                this.player2.play('walk', true);
+            }
+        } else if (this.d) {
+            this.player2.setVelocityX(200);
+            if (this.player2.body.onFloor()) {
+                this.player2.play('walk', true);
+            }
+        } else {
+            // If no keys are pressed, the player keeps still
+            this.player2.setVelocityX(0);
+            // Only show the idle animation if the player is footed
+            // If this is not included, the player would look idle while jumping
+            if (this.player2.body.onFloor()) {
+                this.player2.play('idle', true);
+            }
+        }
+
+        // Player can jump while walking any direction by pressing the space bar
+        // or the 'UP' arrow
+        if (
+            (this.w) &&
+            this.player2.body.onFloor()
+        ) {
+            this.player2.setVelocityY(-350);
+            this.player2.play('jump', true);
+        }
+
+        if (this.player2.body.velocity.x > 0) {
+            this.player2.setFlipX(false);
+        } else if (this.player2.body.velocity.x < 0) {
+            // otherwise, make them face the other side
+            this.player2.setFlipX(true);
+        }
+        console.log('KeyboardEvent');
+
     }
+
+
+    
 
     // metoden updateText för att uppdatera overlaytexten i spelet
     updateText() {
